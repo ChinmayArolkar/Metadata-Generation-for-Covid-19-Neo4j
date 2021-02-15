@@ -1,0 +1,45 @@
+Script to Extract Technical metadata in Neo4j
+
+--To create metadata nodes
+
+MATCH (n)
+    WHERE NOT n:Metagraph AND size(labels(n))>0
+    WITH labels(n) as LABELS, keys(n) as KEYS
+    MERGE (m:Metagraph:NodeType {labels: LABELS})
+    SET m.properties =
+    CASE m.properties
+        WHEN NULL THEN KEYS
+        ELSE apoc.coll.union(m.properties, KEYS)
+    END
+
+--To create metadata Relationship
+
+MATCH (n)-[r]->(m)
+    WHERE NOT n:Metagraph AND NOT m:Metagraph
+    WITH labels(n) as start_labels, type(r) as rel_type, keys(r) as rel_keys, labels(m) as end_labels
+    MERGE (a:Metagraph:NodeType {labels: start_labels})
+    MERGE (b:Metagraph:NodeType {labels: end_labels})
+    MERGE (rel:Metagraph:RelType {type:rel_type})
+    MERGE (a)<-[:StartNodeType]-(rel)-[:EndNodeType]->(b)
+    SET rel.properties =
+    CASE
+        WHEN rel.properties IS NULL AND rel_keys IS NULL THEN []
+        WHEN rel.properties IS NULL AND rel_keys IS NOT NULL THEN rel_keys
+        WHEN rel.properties IS NOT NULL AND rel_keys IS NULL THEN rel.properties
+        WHEN rel.properties IS NOT NULL AND rel_keys IS NOT NULL THEN apoc.coll.union(rel.properties, rel_keys)
+    END
+
+--To generate Technical metadata in table format
+
+CALL apoc.meta.schema() YIELD value as schemaMap
+UNWIND keys(schemaMap) as label
+WITH label, schemaMap[label] as data
+WHERE data.type = "node"
+UNWIND keys(data.properties) as property
+WITH label, property, data.properties[property] as propData
+RETURN label,
+property,
+propData.type as type,
+propData.indexed as isIndexed,
+propData.unique as uniqueConstraint,
+propData.existence as existenceConstraint; 

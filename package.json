@@ -1,0 +1,17 @@
+{
+  "name": "businessmetadata",
+  "version": "1.0.0",
+  "description": "This is a project to display metadata",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "venu and rushali",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "mssql": "^6.2.3"
+  }
+}
